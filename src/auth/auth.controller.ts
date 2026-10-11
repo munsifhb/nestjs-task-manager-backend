@@ -16,6 +16,12 @@ import { RegisterUserDto } from './dto/register-use-dto';
 import { LoginUserDto } from './dto/login-uer-dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
+const cookieOptions = {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none' as const,
+};
+
 @Controller('auth')
 export class AuthController {
     constructor(private authService : AuthService){}
@@ -51,15 +57,12 @@ async getMe(@Request() req) {
 
 
     response.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-    });
+    ...cookieOptions,
+    maxAge: 15 * 60 * 1000,
+});
 
-    response.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'lax',
+response.cookie('refreshToken', refreshToken, {
+    ...cookieOptions,
     maxAge: 7 * 24 * 60 * 60 * 1000,
 });
 
@@ -76,8 +79,10 @@ async logout(
 ) {
   await this.authService.logout(req.user.sub);
 
-  response.clearCookie('accessToken');
-  response.clearCookie('refreshToken');
+  
+
+response.clearCookie('accessToken', cookieOptions);
+response.clearCookie('refreshToken', cookieOptions);
 
   return {
     message: 'Logged out successfully',
@@ -100,19 +105,15 @@ async refresh(
   const { accessToken, refreshToken: newRefreshToken } =
     await this.authService.refreshTokens(refreshToken);
 
-  response.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'lax',
+response.cookie('accessToken', accessToken, {
+    ...cookieOptions,
     maxAge: 15 * 60 * 1000,
-  });
+});
 
-  response.cookie('refreshToken', newRefreshToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'lax',
+response.cookie('refreshToken', newRefreshToken, {
+    ...cookieOptions,
     maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+});
 
   return { message: 'Tokens refreshed successfully' };
 }
